@@ -173,7 +173,7 @@ Notes: Uses `jsonGetKeysAtLevel` repeatedly to traverse nested objects.
 ### Example
 
 ```
-jsonGet("{\"person\":{\"name\":\"Alice\",\"age\":30}}","person/name")
+jsonGet("{"person":{"name":"Alice","age":30}}","person/name")
 	-> "Alice"
 ```
 
