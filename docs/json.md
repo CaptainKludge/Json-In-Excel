@@ -1,6 +1,6 @@
-# JSON helper functions
+# JSON Manipulation Functions
 
-This document groups functions that create, manipulate, and query JSON strings in Excel formulas.
+This document covers the **8 JSON functions** that create, parse, modify, and navigate JSON objects in Excel formulas. These functions form the core of the JSON manipulation system and work together to provide comprehensive JSON handling capabilities.
 
 ## jsonObject
 
@@ -355,3 +355,58 @@ Description: Remove a key (or nested key path) from a JSON object string. Return
 ```
 
 Notes: Recursive remover that preserves other keys.
+
+### Example
+
+```
+jsonRemove("{"person":{"name":"Alice","age":30}}", "person/age")
+    -> "{"person":{"name":"Alice"}}"
+```
+
+## nestedJsonBuild
+
+Description: Build nested JSON objects from a slash-separated path and a value. Used internally by `jsonSet` to create deeply nested structures.
+
+```excel
+=LAMBDA(p,v,
+    LET(
+        parts, TEXTSPLIT(p,,"/",TRUE),
+        IF(
+            OR(p="", ROWS(parts)=0),
+            jsonQuote(v),
+            LET(
+                rev, INDEX(parts, SEQUENCE(ROWS(parts),1,ROWS(parts),-1)),
+                REDUCE(
+                    jsonQuote(v),
+                    rev,
+                    LAMBDA(acc,layer, jsonObject(HSTACK(layer, acc)))
+                )
+            )
+        )
+    )
+)
+```
+
+Notes: This function works by reversing the path components and building nested objects from the inside out. Essential for creating deep object structures in a single operation.
+
+### Example
+
+```
+nestedJsonBuild("user/profile/settings", "enabled")
+    -> "{"user":{"profile":{"settings":"enabled"}}}"
+```
+
+## Function Relationships
+
+These JSON functions work together as an integrated system:
+
+- **`jsonQuote`** → Safely formats values for JSON inclusion
+- **`jsonObject`** → Assembles key-value pairs into JSON objects  
+- **`jsonGetKeysAtLevel`** → Parses objects for navigation and manipulation
+- **`jsonGet`** → Retrieves values using path notation
+- **`jsonSet`** → Modifies or creates nested values (uses `nestedJsonBuild`)
+- **`jsonJoin`** → Merges multiple JSON objects with conflict resolution
+- **`jsonRemove`** → Deletes keys while preserving structure
+- **`nestedJsonBuild`** → Creates deep object hierarchies from paths
+
+This comprehensive toolkit enables sophisticated JSON manipulation directly within Excel formulas, supporting complex data structures and operations that would traditionally require external tools.

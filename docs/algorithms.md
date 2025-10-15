@@ -1,0 +1,133 @@
+# Algorithm Solutions
+
+This category contains advanced mathematical algorithms that solve optimization and allocation problems.
+
+## Functions
+
+### `partFill` - Sequential Part Allocation Algorithm
+
+**Purpose**: Solves the money change making problem for physical parts by sequentially allocating parts to fill a target span.
+
+**Syntax**: 
+```excel
+=partFill(span, partarr, [extrahungry])
+```
+
+**Parameters**:
+- `span`: Target distance/amount to fill (number)
+- `partarr`: Array with part names in column 1 and lengths in column 2
+- `extrahungry`: Optional array for additional allocation rules
+
+**Algorithm Behavior**:
+This function implements a sequential allocation strategy:
+1. Processes each part type in the order provided
+2. For each part, calculates how many units fit: `count = INT(remaining_span / part_length)`
+3. Allocates the calculated count and reduces the remaining span
+4. Continues with the next part using the updated remainder
+5. Returns a JSON object showing the count of each part used and final remainder
+
+**Example**:
+```excel
+// Fill a 100-unit span with parts of different sizes
+=partFill(100, HSTACK({"Pipe A";"Pipe B";"Pipe C"}, {30;20;5}))
+
+// Result: {"Pipe A":3,"Pipe B":0,"Pipe C":2} with remainder 0
+// Explanation: 3×30=90,
+ remainder=10,
+ 0×20=0,
+ remainder=10,
+ 2×5=10,
+ remainder=0
+```
+
+**Use Cases**:
+- Manufacturing: Cutting materials to minimize waste
+- Logistics: Packing items into containers
+- Finance: Making change with available denominations
+- Resource allocation with sequential priority
+
+---
+
+### `greedyPartFill` - Greedy Optimization Algorithm
+
+**Purpose**: Solves the money change making problem using a greedy approach to minimize remainder.
+
+**Syntax**: 
+```excel
+=greedyPartFill(span, partarr, [extrahungry])
+```
+
+**Parameters**:
+- `span`: Target distance/amount to fill (number)
+- `partarr`: Array with part names in column 1 and lengths in column 2
+- `extrahungry`: Optional array for additional allocation rules
+
+**Algorithm Behavior**:
+This function implements a two-phase greedy strategy:
+
+**Phase 1 - Standard Greedy Allocation**:
+1. Processes each part type sequentially
+2. For each part, calculates maximum possible allocation: `count = INT(remaining_span / part_length)`
+3. Allocates the full count and updates remainder
+
+**Phase 2 - Remainder Optimization**:
+1. Identifies all parts that could fit in the remaining span
+2. Selects the largest part that still fits: `MIN(parts_where_length >= remainder)`
+3. Adds one unit of this optimal part to minimize final remainder
+4. Updates the allocation and recalculates final remainder
+
+**Example**:
+```excel
+// Same scenario as partFill but with greedy optimization
+=greedyPartFill(100, HSTACK({"Pipe A";"Pipe B";"Pipe C"}, {30;20;5}))
+
+// Phase 1: 3×30=90 (rem=10),
+ 0×20=0 (rem=10),
+ 2×5=10 (rem=0)
+// Phase 2: remainder=0,
+ no optimization needed
+// Result: {"Pipe A":3,"Pipe B":0,"Pipe C":2} with remainder 0
+```
+
+**Optimization Example**:
+```excel
+// Span=85,
+ Parts: A=30,
+ B=20,
+ C=7
+=greedyPartFill(85, HSTACK({"A";"B";"C"}, {30;20;7}))
+
+// Phase 1: 2×30=60 (rem=25),
+ 1×20=20 (rem=5),
+ 0×7=0 (rem=5)
+// Phase 2: Can't fit A(30) or B(20),
+ but rem=5 < C(7),
+ so no additional fit
+// Result: {"A":2,"B":1,"C":0} with remainder 5
+
+// Compare with partFill which would give the same result in this case
+```
+
+**Key Differences from partFill**:
+- **partFill**: Simple sequential allocation, processes parts in order
+- **greedyPartFill**: Adds optimization phase to minimize final remainder
+- **Performance**: greedyPartFill may find better solutions when remainder minimization is crucial
+- **Complexity**: greedyPartFill has additional logic but same O(n) time complexity
+
+**Use Cases**:
+- **Optimal cutting**: Minimize material waste in manufacturing
+- **Inventory optimization**: Best use of available stock sizes  
+- **Currency exchange**: Minimize coins/bills when making change
+- **Resource planning**: Optimize allocation when remainder cost is high
+
+## Algorithm Comparison
+
+| Aspect | partFill | greedyPartFill |
+|--------|----------|----------------|
+| **Strategy** | Sequential allocation only | Sequential + remainder optimization |
+| **Remainder** | May leave larger remainder | Attempts to minimize remainder |
+| **Performance** | Faster execution | Slightly more complex but still O(n) |
+| **Predictability** | Deterministic, order-dependent | Optimized, may vary from sequential |
+| **Best for** | Simple allocation, order matters | Waste minimization, cost optimization |
+
+Both functions return JSON objects containing the allocation counts and work seamlessly with the other JSON manipulation functions in this library.

@@ -176,8 +176,7 @@ This document covers the **6 list and array processing functions** that handle c
 
 **Example**:
 ```excel
-// Select columns 1 and 3,
- filter rows where column 2 > 10
+// Select columns 1 and 3, filter rows where column 2 > 10
 =SelectFilter(A1:C10, {1;3}, B1:B10>10)
 ```
 
