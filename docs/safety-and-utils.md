@@ -1,6 +1,6 @@
 # Safety and Utility Functions
 
-This document covers the **6 safety and utility functions** that provide error-resistant operations, data validation, and specialized text processing capabilities.
+This document covers the **7 safety and utility functions** that provide error-resistant operations, data validation, and specialized text processing capabilities.
 
 ## safeDrop
 
@@ -25,6 +25,7 @@ This document covers the **6 safety and utility functions** that provide error-r
 ```excel
 =safeDrop(A1:C5, 3)  // Drop first 3 rows
 =safeDrop(A1:C2, 5)  // Safely handles over-drop,
+
  returns empty array
 ```
 
