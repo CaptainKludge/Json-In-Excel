@@ -33,10 +33,15 @@ This function implements a sequential allocation strategy:
 
 // Result: {"Pipe A":3,"Pipe B":0,"Pipe C":2} with remainder 0
 // Explanation: 3×30=90,
+
  remainder=10,
+
  0×20=0,
+
  remainder=10,
+
  2×5=10,
+
  remainder=0
 ```
 
@@ -82,9 +87,12 @@ This function implements a two-phase greedy strategy:
 =greedyPartFill(100, HSTACK({"Pipe A";"Pipe B";"Pipe C"}, {30;20;5}))
 
 // Phase 1: 3×30=90 (rem=10),
+
  0×20=0 (rem=10),
+
  2×5=10 (rem=0)
 // Phase 2: remainder=0,
+
  no optimization needed
 // Result: {"Pipe A":3,"Pipe B":0,"Pipe C":2} with remainder 0
 ```
@@ -92,16 +100,23 @@ This function implements a two-phase greedy strategy:
 **Optimization Example**:
 ```excel
 // Span=85,
+
  Parts: A=30,
+
  B=20,
+
  C=7
 =greedyPartFill(85, HSTACK({"A";"B";"C"}, {30;20;7}))
 
 // Phase 1: 2×30=60 (rem=25),
+
  1×20=20 (rem=5),
+
  0×7=0 (rem=5)
 // Phase 2: Can't fit A(30) or B(20),
+
  but rem=5 < C(7),
+
  so no additional fit
 // Result: {"A":2,"B":1,"C":0} with remainder 5
 

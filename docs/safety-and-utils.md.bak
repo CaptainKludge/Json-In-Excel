@@ -1,6 +1,6 @@
 # Safety and Utility Functions
 
-This document covers the **6 safety and utility functions** that provide error-resistant operations, data validation, and specialized text processing capabilities.
+This document covers the **7 safety and utility functions** that provide error-resistant operations, data validation, and specialized text processing capabilities.
 
 ## safeDrop
 
@@ -24,7 +24,8 @@ This document covers the **6 safety and utility functions** that provide error-r
 **Example**:
 ```excel
 =safeDrop(A1:C5, 3)  // Drop first 3 rows
-=safeDrop(A1:C2, 5)  // Safely handles over-drop, returns empty array
+=safeDrop(A1:C2, 5)  // Safely handles over-drop,
+ returns empty array
 ```
 
 **Use Cases**:
@@ -147,7 +148,7 @@ This document covers the **6 safety and utility functions** that provide error-r
 **Example**:
 ```excel
 =inches("2 yards")     -> 72    (2×36)
-=inches("3 ft 6 in")   -> 42    (3×12 + 6)  
+=inches("3 ft 6 in")   -> 42    (3×12 + 6)
 =inches("5'6\"")       -> 66    (5×12 + 6)
 =inches("24")          -> 24    (direct inches)
 ```
@@ -181,7 +182,7 @@ This document covers the **6 safety and utility functions** that provide error-r
 **Example**:
 ```excel
 =countOccurrencesText("hello world", "l")  -> 3
-=countOccurrencesText("banana", "a")       -> 3  
+=countOccurrencesText("banana", "a")       -> 3
 =countOccurrencesText("", "x")             -> 0  (handles empty strings)
 ```
 

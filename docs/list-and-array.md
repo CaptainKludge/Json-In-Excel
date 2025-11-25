@@ -1,6 +1,6 @@
 # List and Array Processing Functions
 
-This document covers the **6 list and array processing functions** that handle conversions between Excel arrays, JSON arrays, and provide specialized array manipulation capabilities.
+This document covers the **8 list and array processing functions** that handle conversions between Excel arrays, JSON arrays, and provide specialized array manipulation capabilities.
 
 ## listToJson
 
@@ -123,6 +123,57 @@ This document covers the **6 list and array processing functions** that handle c
 
 ---
 
+## GiveMostFrequent
+
+**Purpose**: Find and return the most frequently occurring value in an array.
+
+**Syntax**: 
+```excel
+=GiveMostFrequent(arr)
+```
+
+```excel
+=LAMBDA(arr,
+    INDEX(
+        SORT(
+            LET(
+                array, arr,
+                uniques, UNIQUE(array),
+                counts, COUNTIF(array, uniques),
+                HSTACK(uniques, counts)
+            ),
+            2,
+            -1
+        ),
+        1,
+        1
+    )
+)
+```
+
+**Example**:
+```excel
+=GiveMostFrequent({"apple";"banana";"apple";"cherry";"banana";"apple"})
+    -> "apple"  (appears 3 times)
+
+=GiveMostFrequent({1;2;2;3;3;3;4})
+    -> 3  (appears 3 times)
+```
+
+**How it works**:
+1. Creates a unique list of values
+2. Counts occurrences of each value using COUNTIF
+3. Sorts by count in descending order
+4. Returns the first (most frequent) value
+
+**Use Cases**:
+- Statistical mode calculation
+- Finding dominant category in datasets
+- Identifying most common response in surveys
+- Data quality analysis (finding most prevalent value)
+
+---
+
 ## vLastItem
 
 **Purpose**: Get the last non-empty item from a vertical array, with optional default value for empty arrays.
@@ -177,6 +228,7 @@ This document covers the **6 list and array processing functions** that handle c
 **Example**:
 ```excel
 // Select columns 1 and 3,
+
  filter rows where column 2 > 10
 =SelectFilter(A1:C10, {1;3}, B1:B10>10)
 ```
@@ -186,12 +238,73 @@ This document covers the **6 list and array processing functions** that handle c
 - Report generation with specific field selection
 - Database-like operations in Excel
 
+---
+
+## dropBySet
+
+**Purpose**: Advanced column filtering that removes or keeps columns based on a set specification and repeating pattern.
+
+**Syntax**: 
+```excel
+=dropBySet(range, setText, repeat, keepMatch)
+```
+
+```excel
+=LAMBDA(range,setText,repeat,keepMatch,
+    LET(
+        dataRange, range,
+        setString, setText,
+        repeatPattern, repeat,
+        keepMatched, keepMatch,
+        firstCol, COLUMN(INDEX(dataRange,1,1)),
+        colOffsets, COLUMN(dataRange) - firstCol,
+        numsRawText, IFERROR(TEXTSPLIT(REGEXREPLACE(setString,"[^\d]+"," ")," "), ""),
+        numsFiltered, IF(COUNTA(numsRawText)=0, "", FILTER(numsRawText, numsRawText<>"")),
+        maxNum, IF(COUNTA(numsFiltered)=0, COLUMNS(dataRange), MAX(VALUE(numsFiltered))),
+        period, IF(maxNum<=0, COLUMNS(dataRange), maxNum),
+        patternPos, MOD(colOffsets, period) + 1,
+        labelArray, patternPos,
+        matchedMask, MAP(labelArray, LAMBDA(lbl, isInSet(lbl,setString))),
+        includeMask, IF(keepMatched, matchedMask, NOT(matchedMask)),
+        colIndices, FILTER(SEQUENCE(1,COLUMNS(dataRange)), includeMask),
+        CHOOSECOLS(dataRange, colIndices)
+    )
+)
+```
+
+**Parameters**:
+- `range`: Source data range to process
+- `setText`: Set specification string defining which columns to match (uses interval notation)
+- `repeat`: Repeat pattern period for column matching
+- `keepMatch`: TRUE to keep matching columns, FALSE to drop them
+
+**How it works**:
+1. Determines column positions relative to the first column
+2. Applies a repeating pattern with the specified period
+3. Evaluates which columns match the set specification using `isInSet`
+4. Keeps or drops matching columns based on `keepMatch` parameter
+
+**Example**:
+```excel
+// Keep every 3rd column (columns 3, 6, 9, etc.)
+=dropBySet(A1:J10, "3", 3, TRUE)
+
+// Drop columns 1-2 in a repeating pattern of 5
+=dropBySet(A1:Z10, "[1,2]", 5, FALSE)
+```
+
+**Use Cases**:
+- Removing repeating column patterns from imported data
+- Extracting specific columns from structured datasets
+- Data cleanup with periodic column structures
+- Report formatting with column pattern filtering
+
 ## Function Integration
 
 These array processing functions integrate seamlessly with the JSON system:
 
 - **`listToJson`** and **`listFromJson`** provide bidirectional conversion between Excel arrays and JSON arrays
 - **`arrayRepAdd`** powers the JSON manipulation functions by managing key-value collections
-- **`CountUnique`**, **`vLastItem`**, and **`SelectFilter`** provide advanced data processing capabilities that complement JSON workflows
+- **`CountUnique`**, **`GiveMostFrequent`**, **`vLastItem`**, **`SelectFilter`**, and **`dropBySet`** provide advanced data processing capabilities that complement JSON workflows
 
 This combination enables sophisticated data transformation pipelines that can process arrays, convert to JSON for complex manipulation, and convert back to Excel arrays for final presentation.

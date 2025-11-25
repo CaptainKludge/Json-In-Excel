@@ -1,6 +1,6 @@
 # Json In Excel
 
-A comprehensive collection of Excel LAMBDA functions for JSON manipulation, list/array processing, and advanced mathematical algorithms. This project extends Excel's functionality with 22 custom functions that enable native JSON data object manipulations and sophisticated problem-solving capabilities.
+A comprehensive collection of Excel LAMBDA functions for JSON manipulation, list/array processing, and advanced mathematical algorithms. This project extends Excel's functionality with 25 custom functions that enable native JSON data object manipulations and sophisticated problem-solving capabilities.
 
 ## Quick Start
 
@@ -16,13 +16,13 @@ jsonexcelexctraction.cmd -export
 
 ## Function Categories
 
-This library contains **22 functions** organized into four main categories:
+This library contains **25 functions** organized into four main categories:
 
 | Category | Function Count | Description |
 |----------|----------------|-------------|
 | [JSON Manipulation](docs/json.md) | 8 functions | Create, parse, modify, and navigate JSON objects |
-| [List & Array Processing](docs/list-and-array.md) | 6 functions | Convert, filter, and manipulate arrays and lists |
-| [Utility & Safety](docs/safety-and-utils.md) | 6 functions | Helper functions for safe operations and data validation |
+| [List & Array Processing](docs/list-and-array.md) | 8 functions | Convert, filter, and manipulate arrays and lists |
+| [Utility & Safety](docs/safety-and-utils.md) | 7 functions | Helper functions for safe operations and data validation |
 | [Algorithm Solutions](docs/algorithms.md) | 2 functions | Advanced mathematical algorithms including money change solutions |
 
 ### Key Features
