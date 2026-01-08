@@ -509,8 +509,62 @@ $btnRun.Add_Click({
                     Update-Status $progressPercent "Inserted $i of $count functions..."
                 }
                 
-                Write-Host "Function insertion complete - Saving workbook..." -ForegroundColor Cyan
-                Update-Status 90 "Saving workbook with new functions..."
+                Write-Host "Function insertion complete - Creating 'New Functions' sheet..." -ForegroundColor Cyan
+                Update-Status 85 "Creating 'New Functions' sheet..."
+                
+                # Create or clear the "New Functions" sheet
+                try {
+                    # Try to find existing "New Functions" sheet
+                    $newFunctionsSheet = $null
+                    foreach($sheet in $wb.Worksheets) {
+                        if($sheet.Name -eq "New Functions") {
+                            $newFunctionsSheet = $sheet
+                            Write-Host "  Found existing 'New Functions' sheet - clearing content..." -ForegroundColor Yellow
+                            break
+                        }
+                    }
+                    
+                    # If sheet doesn't exist, create it
+                    if($null -eq $newFunctionsSheet) {
+                        $newFunctionsSheet = $wb.Worksheets.Add()
+                        $newFunctionsSheet.Name = "New Functions"
+                        Write-Host "  Created new sheet: 'New Functions'" -ForegroundColor Green
+                    } else {
+                        # Clear existing content
+                        $newFunctionsSheet.Cells.Clear()
+                        Write-Host "  Cleared existing content in 'New Functions' sheet" -ForegroundColor Yellow
+                    }
+                    
+                    # Add headers
+                    $newFunctionsSheet.Cells.Item(1, 1).Value2 = "Function Name"
+                    $newFunctionsSheet.Cells.Item(1, 2).Value2 = "Formula"
+                    
+                    # Make headers bold
+                    $newFunctionsSheet.Cells.Item(1, 1).Font.Bold = $true
+                    $newFunctionsSheet.Cells.Item(1, 2).Font.Bold = $true
+                    
+                    # Populate the sheet with function names and formulas
+                    $row = 2
+                    foreach($functionName in $keys) {
+                        $formula = $json.$functionName
+                        $newFunctionsSheet.Cells.Item($row, 1).Value2 = $functionName
+                        $newFunctionsSheet.Cells.Item($row, 2).Value2 = $formula
+                        $row++
+                    }
+                    
+                    # Auto-fit columns for better readability
+                    $newFunctionsSheet.Columns.Item(1).AutoFit() | Out-Null
+                    $newFunctionsSheet.Columns.Item(2).ColumnWidth = 100  # Set a reasonable width for formulas
+                    
+                    Write-Host "  Successfully populated 'New Functions' sheet with $count functions" -ForegroundColor Green
+                    
+                } catch {
+                    Write-Host "  WARNING: Failed to create/update 'New Functions' sheet: $($_.Exception.Message)" -ForegroundColor Yellow
+                    # Continue execution - sheet creation failure should not prevent saving
+                }
+                
+                Write-Host "Saving workbook..." -ForegroundColor Cyan
+                Update-Status 95 "Saving workbook with new functions..."
                 
                 # Save the workbook with new functions
                 $wb.Save()
@@ -519,7 +573,7 @@ $btnRun.Add_Click({
                 
                 # Show completion message
                 [System.Windows.Forms.MessageBox]::Show(
-                    "Insert completed successfully!`n`nInserted: $insertedFunctions LAMBDA functions`nSaved to: $Script:excelPath", 
+                    "Insert completed successfully!`n`nInserted: $insertedFunctions LAMBDA functions`nCreated 'New Functions' sheet with function list`nSaved to: $Script:excelPath", 
                     "Insert Complete", 
                     [System.Windows.Forms.MessageBoxButtons]::OK, 
                     [System.Windows.Forms.MessageBoxIcon]::Information
