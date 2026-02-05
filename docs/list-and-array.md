@@ -359,18 +359,20 @@ This document covers the **8 list and array processing functions** that handle c
     LAMBDA(name,title, title & " " & name)
 )
 
-// Result (6 rows):
+// Result (12 rows - 2 * 3 * 2):
+// Forward phase (name from A, title from B):
 // "Dr. Alice"
 // "Dr. Bob"
 // "Dr. Charlie"
 // "Prof. Alice"
 // "Prof. Bob"
 // "Prof. Charlie"
+// Reverse phase (name from B, title from A):
 // "Alice Dr."
-// "Bob Dr."
-// "Charlie Dr."
 // "Alice Prof."
+// "Bob Dr."
 // "Bob Prof."
+// "Charlie Dr."
 // "Charlie Prof."
 ```
 
@@ -390,7 +392,9 @@ This document covers the **8 list and array processing functions** that handle c
     LAMBDA(a,b, a + b)
 )
 
-// Result: {11;12;13;21;22;23;11;21;12;22;13;23}
+// Forward phase: 11, 12, 13, 21, 22, 23
+// Reverse phase: 11, 21, 12, 22, 13, 23
+// Combined result: {11;12;13;21;22;23;11;21;12;22;13;23}
 ```
 
 ## Function Integration
