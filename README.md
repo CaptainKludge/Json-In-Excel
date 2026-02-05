@@ -16,12 +16,12 @@ jsonexcelexctraction.cmd -export
 
 ## Function Categories
 
-This library contains **25 functions** organized into four main categories:
+This library contains **26 functions** organized into four main categories:
 
 | Category | Function Count | Description |
 |----------|----------------|-------------|
 | [JSON Manipulation](docs/json.md) | 8 functions | Create, parse, modify, and navigate JSON objects |
-| [List & Array Processing](docs/list-and-array.md) | 8 functions | Convert, filter, and manipulate arrays and lists |
+| [List & Array Processing](docs/list-and-array.md) | 9 functions | Convert, filter, and manipulate arrays and lists |
 | [Utility & Safety](docs/safety-and-utils.md) | 7 functions | Helper functions for safe operations and data validation |
 | [Algorithm Solutions](docs/algorithms.md) | 2 functions | Advanced mathematical algorithms including money change solutions |
 

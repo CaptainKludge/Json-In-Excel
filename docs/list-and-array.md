@@ -299,12 +299,106 @@ This document covers the **8 list and array processing functions** that handle c
 - Data cleanup with periodic column structures
 - Report formatting with column pattern filtering
 
+---
+
+## permutate
+
+**Purpose**: Generate all ordered pairs from two arrays by applying a custom function to each combination, creating both (A,B) and (B,A) permutations.
+
+**Syntax**: 
+```excel
+=permutate(A, B, f)
+```
+
+```excel
+=LAMBDA(A,B,f,
+    LET(
+        nA, ROWS(A),
+        nB, ROWS(B),
+        forward,
+        MAKEARRAY(
+            nA*nB, 1,
+            LAMBDA(r,c,
+                f(
+                    INDEX(A, MOD(r-1,nA)+1),
+                    INDEX(B, INT((r-1)/nA)+1)
+                )
+            )
+        ),
+        reverse,
+        MAKEARRAY(
+            nA*nB, 1,
+            LAMBDA(r,c,
+                f(
+                    INDEX(B, MOD(r-1,nB)+1),
+                    INDEX(A, INT((r-1)/nB)+1)
+                )
+            )
+        ),
+        VSTACK(forward, reverse)
+    )
+)
+```
+
+**Parameters**:
+- `A`: First vertical array (single column)
+- `B`: Second vertical array (single column)
+- `f`: LAMBDA function that takes two parameters and returns a result
+
+**How it works**:
+1. Creates a "forward" set of combinations applying `f(A[i], B[j])` for all i,j pairs
+2. Creates a "reverse" set of combinations applying `f(B[j], A[i])` for all i,j pairs
+3. Returns both sets stacked vertically, producing `2 * nA * nB` total results
+
+**Example**:
+```excel
+// Concatenate all pairs of names and titles
+=permutate(
+    {"Alice";"Bob";"Charlie"},
+    {"Dr.";"Prof."},
+    LAMBDA(name,title, title & " " & name)
+)
+
+// Result (6 rows):
+// "Dr. Alice"
+// "Dr. Bob"
+// "Dr. Charlie"
+// "Prof. Alice"
+// "Prof. Bob"
+// "Prof. Charlie"
+// "Alice Dr."
+// "Bob Dr."
+// "Charlie Dr."
+// "Alice Prof."
+// "Bob Prof."
+// "Charlie Prof."
+```
+
+**Use Cases**:
+- Generating all possible combinations of two datasets
+- Creating test cases from parameter sets
+- Building product/option matrices
+- Text manipulation across two lists
+- Mathematical operations on array pairs
+
+**Advanced Example - Mathematical Operations**:
+```excel
+// Calculate sum of all pairs
+=permutate(
+    {1;2;3},
+    {10;20},
+    LAMBDA(a,b, a + b)
+)
+
+// Result: {11;12;13;21;22;23;11;21;12;22;13;23}
+```
+
 ## Function Integration
 
 These array processing functions integrate seamlessly with the JSON system:
 
 - **`listToJson`** and **`listFromJson`** provide bidirectional conversion between Excel arrays and JSON arrays
 - **`arrayRepAdd`** powers the JSON manipulation functions by managing key-value collections
-- **`CountUnique`**, **`GiveMostFrequent`**, **`vLastItem`**, **`SelectFilter`**, and **`dropBySet`** provide advanced data processing capabilities that complement JSON workflows
+- **`CountUnique`**, **`GiveMostFrequent`**, **`vLastItem`**, **`SelectFilter`**, **`dropBySet`**, and **`permutate`** provide advanced data processing capabilities that complement JSON workflows
 
 This combination enables sophisticated data transformation pipelines that can process arrays, convert to JSON for complex manipulation, and convert back to Excel arrays for final presentation.
