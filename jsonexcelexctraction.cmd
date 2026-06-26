@@ -161,7 +161,7 @@ $form.Controls.Add($lblJson)
 
 # Mode toggle checkbox - determines extract vs insert operation
 $toggleMode = New-Object System.Windows.Forms.CheckBox
-$toggleMode.Text = "🔄 Insert Mode (unchecked = Extract Mode)"
+$toggleMode.Text = "Insert Mode (unchecked = Extract Mode)"
 $toggleMode.Location = New-Object System.Drawing.Point(10,100)
 $toggleMode.Size = New-Object System.Drawing.Size(300,25)
 $toggleMode.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
@@ -195,7 +195,7 @@ $form.Controls.Add($lblStatus)
 
 # Main execution button - triggers extract or insert based on mode
 $btnRun = New-Object System.Windows.Forms.Button
-$btnRun.Text = "🚀 Run Operation"
+$btnRun.Text = "Run Operation"
 $btnRun.Location = New-Object System.Drawing.Point(10,210)
 $btnRun.Size = New-Object System.Drawing.Size(120,35)
 $btnRun.BackColor = [System.Drawing.Color]::LightCoral
@@ -438,7 +438,7 @@ $btnRun.Add_Click({
         try {
             ($dict | ConvertTo-Json -Depth 100) | Out-File -FilePath $Script:jsonPath -Encoding UTF8
             Write-Host "Successfully exported to: $Script:jsonPath" -ForegroundColor Green
-            Update-Status 100 "✅ Exported $foundFunctions functions to JSON"
+            Update-Status 100 "Exported $foundFunctions functions to JSON"
             
             # Show completion message
             [System.Windows.Forms.MessageBox]::Show(
@@ -449,7 +449,7 @@ $btnRun.Add_Click({
             )
         } catch {
             Write-Host "ERROR: Failed to write JSON file: $($_.Exception.Message)" -ForegroundColor Red
-            Update-Status 100 "❌ Failed to write JSON file"
+            Update-Status 100 "Failed to write JSON file"
             [System.Windows.Forms.MessageBox]::Show(
                 "Failed to write JSON file:`n$($_.Exception.Message)", 
                 "Export Error", 
@@ -569,7 +569,7 @@ $btnRun.Add_Click({
                 # Save the workbook with new functions
                 $wb.Save()
                 Write-Host "Workbook saved successfully" -ForegroundColor Green
-                Update-Status 100 "✅ Inserted $insertedFunctions functions into Excel"
+                Update-Status 100 "Inserted $insertedFunctions functions into Excel"
                 
                 # Show completion message
                 [System.Windows.Forms.MessageBox]::Show(
@@ -581,7 +581,7 @@ $btnRun.Add_Click({
                 
             } catch {
                 Write-Host "ERROR: Failed to process JSON file: $($_.Exception.Message)" -ForegroundColor Red
-                Update-Status 100 "❌ Failed to process JSON file"
+                Update-Status 100 "Failed to process JSON file"
                 [System.Windows.Forms.MessageBox]::Show(
                     "Failed to process JSON file:`n$($_.Exception.Message)", 
                     "Insert Error", 
@@ -592,7 +592,7 @@ $btnRun.Add_Click({
             
         } else {
             Write-Host "ERROR: JSON file not found: $Script:jsonPath" -ForegroundColor Red
-            Update-Status 100 "❌ JSON file not found"
+            Update-Status 100 "JSON file not found"
             [System.Windows.Forms.MessageBox]::Show(
                 "JSON file not found:`n$Script:jsonPath`n`nPlease check the file path or run Extract mode first.", 
                 "File Not Found", 

@@ -1,148 +1,126 @@
 # Algorithm Solutions
 
-This category contains advanced mathematical algorithms that solve optimization and allocation problems.
+This category contains allocation and optimization functions built on top of the JSON helpers.
 
 ## Functions
 
-### `partFill` - Sequential Part Allocation Algorithm
+### `partFill` - Sequential Part Allocation
 
-**Purpose**: Solves the money change making problem for physical parts by sequentially allocating parts to fill a target span.
+**Purpose**: Allocate part counts in input order using integer division of the remaining span.
 
-**Syntax**: 
+**Syntax**:
 ```excel
 =partFill(span, partarr, [extrahungry])
 ```
 
 **Parameters**:
-- `span`: Target distance/amount to fill (number)
-- `partarr`: Array with part names in column 1 and lengths in column 2
-- `extrahungry`: Optional array for additional allocation rules
+- `span`: Target span/amount (number)
+- `partarr`: Two-column array: part name (col 1), part length (col 2)
+- `extrahungry` (optional): Two-column post-processing rules
+	- Column 1: JSON adjustments (for example `{"Pipe A":2}`)
+	- Column 2: remainder interval string consumed by `between` (for example `[0,4]`)
 
-**Algorithm Behavior**:
-This function implements a sequential allocation strategy:
-1. Processes each part type in the order provided
-2. For each part, calculates how many units fit: `count = INT(remaining_span / part_length)`
-3. Allocates the calculated count and reduces the remaining span
-4. Continues with the next part using the updated remainder
-5. Returns a JSON object showing the count of each part used and final remainder
+**How it works**:
+1. Iterate each part row in order.
+2. Compute `pcount = INT(rem / part_length)`.
+3. Write non-zero counts into an output JSON object.
+4. Keep reducing remainder through the loop.
+5. If `extrahungry` is provided, filter matching rule rows where `between(finalRemainder, interval)` is TRUE.
+6. Merge matching JSON adjustments into output using `jsonJoin(..., 2)` (numeric fields are added).
 
-**Example**:
+**Important behavior**:
+- `extrahungry` is post-processing. It does not alter the per-row `INT(rem / len)` calculation while iterating.
+- Return value is the allocation JSON object.
+
+**Example 1**:
 ```excel
-// Fill a 100-unit span with parts of different sizes
 =partFill(100, HSTACK({"Pipe A";"Pipe B";"Pipe C"}, {30;20;5}))
-
-// Result: {"Pipe A":3,"Pipe B":0,"Pipe C":2} with remainder 0
-// Explanation: 3×30=90,
-
- remainder=10,
-
- 0×20=0,
-
- remainder=10,
-
- 2×5=10,
-
- remainder=0
 ```
 
-**Use Cases**:
-- Manufacturing: Cutting materials to minimize waste
-- Logistics: Packing items into containers
-- Finance: Making change with available denominations
-- Resource allocation with sequential priority
+Result:
+```text
+{"Pipe A":3,"Pipe C":2}
+```
+
+**Example 2 (extrahungry adjustment)**:
+```excel
+=partFill(
+	101,
+	HSTACK({"A";"B";"C"}, {30;20;5}),
+	HSTACK({"{""C"":1}";"{""A"":1}"}, {"[1,1]";"[0,0]"})
+)
+```
+
+Explanation:
+- Base pass yields remainder `1` and output `{"A":3,"C":2}`.
+- Rule `[1,1]` applies, so `{"C":1}` is added.
+
+Result:
+```text
+{"A":3,"C":3}
+```
 
 ---
 
-### `greedyPartFill` - Greedy Optimization Algorithm
+### `greedyPartFill` - Two-Phase Greedy Allocation
 
-**Purpose**: Solves the money change making problem using a greedy approach to minimize remainder.
+**Purpose**: Run the same sequential pass, then attempt a one-part remainder correction.
 
-**Syntax**: 
+**Syntax**:
 ```excel
 =greedyPartFill(span, partarr, [extrahungry])
 ```
 
 **Parameters**:
-- `span`: Target distance/amount to fill (number)
-- `partarr`: Array with part names in column 1 and lengths in column 2
-- `extrahungry`: Optional array for additional allocation rules
+- `span`: Target span/amount (number)
+- `partarr`: Two-column array: part name and part length
+- `extrahungry` (optional): Same shape/behavior as `partFill`
 
-**Algorithm Behavior**:
-This function implements a two-phase greedy strategy:
+**How it works**:
+1. Phase 1 is equivalent to `partFill` base counting.
+2. Compute `remAfterGreedy`.
+3. Pick one additional length:
+	 - Prefer `MIN(partLens where partLen >= remAfterGreedy)`.
+	 - If none exist, use `MIN(partLens)`.
+4. Add one count to that part.
+5. Recompute remainder as `remAfterGreedy - pickLen` (can be negative).
+6. Apply `extrahungry` post-processing exactly like `partFill` using final remainder.
 
-**Phase 1 - Standard Greedy Allocation**:
-1. Processes each part type sequentially
-2. For each part, calculates maximum possible allocation: `count = INT(remaining_span / part_length)`
-3. Allocates the full count and updates remainder
+**Important behavior**:
+- The selection expression uses `MIN` on candidates `>= remainder`, which picks the smallest overshooting part.
+- If no part is large enough, the smallest part is still added, which may produce negative remainder.
 
-**Phase 2 - Remainder Optimization**:
-1. Identifies all parts that could fit in the remaining span
-2. Selects the largest part that still fits: `MIN(parts_where_length >= remainder)`
-3. Adds one unit of this optimal part to minimize final remainder
-4. Updates the allocation and recalculates final remainder
-
-**Example**:
+**Example 1 (overshoot case)**:
 ```excel
-// Same scenario as partFill but with greedy optimization
-=greedyPartFill(100, HSTACK({"Pipe A";"Pipe B";"Pipe C"}, {30;20;5}))
-
-// Phase 1: 3×30=90 (rem=10),
-
- 0×20=0 (rem=10),
-
- 2×5=10 (rem=0)
-// Phase 2: remainder=0,
-
- no optimization needed
-// Result: {"Pipe A":3,"Pipe B":0,"Pipe C":2} with remainder 0
-```
-
-**Optimization Example**:
-```excel
-// Span=85,
-
- Parts: A=30,
-
- B=20,
-
- C=7
 =greedyPartFill(85, HSTACK({"A";"B";"C"}, {30;20;7}))
-
-// Phase 1: 2×30=60 (rem=25),
-
- 1×20=20 (rem=5),
-
- 0×7=0 (rem=5)
-// Phase 2: Can't fit A(30) or B(20),
-
- but rem=5 < C(7),
-
- so no additional fit
-// Result: {"A":2,"B":1,"C":0} with remainder 5
-
-// Compare with partFill which would give the same result in this case
 ```
 
-**Key Differences from partFill**:
-- **partFill**: Simple sequential allocation, processes parts in order
-- **greedyPartFill**: Adds optimization phase to minimize final remainder
-- **Performance**: greedyPartFill may find better solutions when remainder minimization is crucial
-- **Complexity**: greedyPartFill has additional logic but same O(n) time complexity
+Explanation:
+- Phase 1 gives `{"A":2,"B":1}` with remainder `5`.
+- Candidate lengths `>=5` are `30,20,7`; `MIN` picks `7`.
+- Add one `C`: remainder becomes `-2`.
 
-**Use Cases**:
-- **Optimal cutting**: Minimize material waste in manufacturing
-- **Inventory optimization**: Best use of available stock sizes  
-- **Currency exchange**: Minimize coins/bills when making change
-- **Resource planning**: Optimize allocation when remainder cost is high
+Result:
+```text
+{"A":2,"B":1,"C":1}
+```
 
-## Algorithm Comparison
+**Example 2 (already exact)**:
+```excel
+=greedyPartFill(100, HSTACK({"Pipe A";"Pipe B";"Pipe C"}, {30;20;5}))
+```
+
+Result:
+```text
+{"Pipe A":3,"Pipe C":2}
+```
+
+## Comparison
 
 | Aspect | partFill | greedyPartFill |
-|--------|----------|----------------|
-| **Strategy** | Sequential allocation only | Sequential + remainder optimization |
-| **Remainder** | May leave larger remainder | Attempts to minimize remainder |
-| **Performance** | Faster execution | Slightly more complex but still O(n) |
-| **Predictability** | Deterministic, order-dependent | Optimized, may vary from sequential |
-| **Best for** | Simple allocation, order matters | Waste minimization, cost optimization |
-
-Both functions return JSON objects containing the allocation counts and work seamlessly with the other JSON manipulation functions in this library.
+|---|---|---|
+| Base pass | Sequential integer allocation | Same base pass |
+| Extra phase | None | Adds one extra chosen part |
+| Remainder | Non-negative in normal cases | Can become negative after phase 2 |
+| extrahungry | Post-merge by final remainder | Same post-merge by final remainder |
+| Typical use | Deterministic ordered allocation | Prefer closer fit via one-step correction |

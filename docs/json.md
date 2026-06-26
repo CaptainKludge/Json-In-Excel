@@ -21,7 +21,7 @@ Formula (paste into Excel Name Manager as the LAMBDA body):
                 safeKeys,
                 safeVals,
                 LAMBDA(k,v,
-                    IF(k<>":", jsonQuote(k) & ":" & v, "")
+                    IF(k<>"", jsonQuote(k) & ":" & v, "")
                 )
             ),
         joined, TEXTJOIN(",", TRUE, safeFilter(pairStrings, pairStrings<>"")),
@@ -314,6 +314,45 @@ Description: Merge one or more JSON objects or arrays into another with several 
 ```
 
 Notes: Because of its length and complexity, review before using. Mode determines how values combine (0/1/2). Use conservatively and test on sample JSON.
+
+### Mode behavior (current implementation)
+
+- `MODE = 0` (normal merge):
+    - Object vs object at same key: recursively merge.
+    - Array vs array at same key: append arrays.
+    - Otherwise: incoming value replaces old value.
+- `MODE = 1` (replace):
+    - Existing key values are replaced by incoming values.
+- `MODE = 2` (add/append):
+    - Number + number: arithmetic addition.
+    - Text + text: concatenation.
+    - Array + scalar or scalar + array: scalar is appended into the array.
+
+### Examples
+
+Add numeric counts:
+
+```excel
+=jsonJoin("{""A"":2,""B"":1}", "{""A"":3}", 2)
+```
+
+Result:
+
+```text
+{"A":5,"B":1}
+```
+
+Merge nested objects:
+
+```excel
+=jsonJoin("{""cfg"":{""x"":1}}", "{""cfg"":{""y"":2}}", 0)
+```
+
+Result:
+
+```text
+{"cfg":{"x":1,"y":2}}
+```
 
 ## jsonRemove
 

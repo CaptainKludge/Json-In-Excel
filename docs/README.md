@@ -9,6 +9,19 @@ Files:
 | `json.md` | Functions for JSON creation, quoting, getting and setting values |
 | `list-and-array.md` | Helpers for lists, arrays and conversions |
 | `safety-and-utils.md` | Utility and safe-wrapping functions (safeDrop, safeFilter, makearr, etc.) |
+| `algorithms.md` | Allocation/optimization solvers (`partFill`, `greedyPartFill`) |
+
+## Coverage (functions.json)
+
+Current docs cover all functions presently listed in `functions.json`:
+
+- JSON: `jsonObject`, `jsonQuote`, `jsonGetKeysAtLevel`, `jsonGet`, `jsonSet`, `jsonJoin`, `jsonRemove`, `nestedJsonBuild`
+- List/array: `listToJson`, `listFromJson`, `arrayRepAdd`, `CountUnique`, `GiveMostFrequent`, `vLastItem`, `SelectFilter`, `dropBySet`, `permutate`
+- Utilities/safety: `safeDrop`, `safeFilter`, `makearr`, `between`, `isInSet`, `inches`, `countOccurancesText`, `EdgeDetect`, `COMMENT`
+- Algorithms: `partFill`, `greedyPartFill`
+
+Naming notes from current function set:
+
 
 Notes:
 
@@ -16,7 +29,7 @@ Notes:
 
 ---
 
-Generated on: 2025-10-02
+Generated on: 2026-06-26
 
 ## Using the command-line helper (`jsonexcelexctraction.cmd`)
 

@@ -1,6 +1,6 @@
 # List and Array Processing Functions
 
-This document covers the **8 list and array processing functions** that handle conversions between Excel arrays, JSON arrays, and provide specialized array manipulation capabilities.
+This document covers the **9 list and array processing functions** that handle conversions between Excel arrays, JSON arrays, and provide specialized array manipulation capabilities.
 
 ## listToJson
 
@@ -299,12 +299,86 @@ This document covers the **8 list and array processing functions** that handle c
 - Data cleanup with periodic column structures
 - Report formatting with column pattern filtering
 
+
+---
+
+## permutate
+
+**Purpose**: Generate pairwise combinations of two input arrays by applying a custom LAMBDA to every pair in both directions.
+
+**Syntax**:
+```excel
+=permutate(A, B, f)
+```
+
+```excel
+=LAMBDA(A,B,f,
+    LET(
+        nA, ROWS(A),
+        nB, ROWS(B),
+
+        forward,
+        MAKEARRAY(
+            nA*nB, 1,
+            LAMBDA(r,c,
+                f(
+                    INDEX(A, MOD(r-1,nA)+1),
+                    INDEX(B, INT((r-1)/nA)+1)
+                )
+            )
+        ),
+
+        reverse,
+        MAKEARRAY(
+            nA*nB, 1,
+            LAMBDA(r,c,
+                f(
+                    INDEX(B, MOD(r-1,nB)+1),
+                    INDEX(A, INT((r-1)/nB)+1)
+                )
+            )
+        ),
+
+        VSTACK(forward, reverse)
+    )
+)
+```
+
+**How it works**:
+1. Builds all ordered pairs `(A_i, B_j)` in a forward block.
+2. Builds all ordered pairs `(B_j, A_i)` in a reverse block.
+3. Stacks both blocks vertically.
+
+**Example 1 (text pairing)**:
+```excel
+=permutate({"A";"B"}, {"1";"2"}, LAMBDA(x,y, x&"-"&y))
+```
+
+Result:
+```text
+A-1
+B-1
+A-2
+B-2
+1-A
+2-A
+1-B
+2-B
+```
+
+**Example 2 (scoring matrix flatten)**:
+```excel
+=permutate({10;20}, {1;3;5}, LAMBDA(x,y, x*y))
+```
+
+Returns 12 rows (`2*3*2`) with forward and reverse multiplication outputs.
+
 ## Function Integration
 
 These array processing functions integrate seamlessly with the JSON system:
 
 - **`listToJson`** and **`listFromJson`** provide bidirectional conversion between Excel arrays and JSON arrays
 - **`arrayRepAdd`** powers the JSON manipulation functions by managing key-value collections
-- **`CountUnique`**, **`GiveMostFrequent`**, **`vLastItem`**, **`SelectFilter`**, and **`dropBySet`** provide advanced data processing capabilities that complement JSON workflows
+- **`CountUnique`**, **`GiveMostFrequent`**, **`vLastItem`**, **`SelectFilter`**, `dropBySet`, and `permutate` provide advanced data processing capabilities that complement JSON workflows
 
 This combination enables sophisticated data transformation pipelines that can process arrays, convert to JSON for complex manipulation, and convert back to Excel arrays for final presentation.

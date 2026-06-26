@@ -1,6 +1,6 @@
 # Safety and Utility Functions
 
-This document covers the **7 safety and utility functions** that provide error-resistant operations, data validation, and specialized text processing capabilities.
+This document covers the **9 safety and utility functions** that provide error-resistant operations, data validation, and specialized text processing capabilities.
 
 ## safeDrop
 
@@ -167,13 +167,13 @@ This document covers the **7 safety and utility functions** that provide error-r
 
 ---
 
-## countOccurrencesText
+## countOccurancesText
 
 **Purpose**: Count how many times a specific character or substring appears in a text string.
 
 **Syntax**: 
 ```excel
-=countOccurrencesText(cellRef, character)
+=countOccurancesText(cellRef, character)
 ```
 
 ```excel
@@ -182,9 +182,9 @@ This document covers the **7 safety and utility functions** that provide error-r
 
 **Example**:
 ```excel
-=countOccurrencesText("hello world", "l")  -> 3
-=countOccurrencesText("banana", "a")       -> 3
-=countOccurrencesText("", "x")             -> 0  (handles empty strings)
+=countOccurancesText("hello world", "l")  -> 3
+=countOccurancesText("banana", "a")       -> 3
+=countOccurancesText("", "x")             -> 0  (handles empty strings)
 ```
 
 **Use Cases**:
@@ -229,12 +229,85 @@ This document covers the **7 safety and utility functions** that provide error-r
 - Advanced conditional formatting
 - Dynamic filtering with multiple conditions
 
+---
+
+## EdgeDetect
+
+**Purpose**: Compare each row with a neighboring row and return a detector result (leading, trailing, or both-side comparison).
+
+**Syntax**:
+```excel
+=EdgeDetect(data, mode, detector)
+```
+
+```excel
+=LAMBDA(data,mode,detector,
+    LET(
+        n,ROWS(data),
+        prev,VSTACK(TAKE(data,-1), TAKE(data,n-1)),
+        next,VSTACK(DROP(data,1), TAKE(data,1)),
+        SWITCH(
+            mode,
+            -1, MAP(data, prev, LAMBDA(cur,p, detector(cur,p))),
+             1, MAP(data, next, LAMBDA(cur,nxt, detector(cur,nxt))),
+             0, MAP(data, prev, next, LAMBDA(cur,p,nxt, detector(cur,p,nxt)))
+        )
+    )
+)
+```
+
+**Modes**:
+- `-1`: compare current with previous row
+- `1`: compare current with next row
+- `0`: compare current with both previous and next
+
+**Example**:
+```excel
+=EdgeDetect({1;1;2;2;3}, -1, LAMBDA(cur,prev, cur<>prev))
+```
+>[!NOTE]
+> the lambda detector can be customized to return any value based on the comparison, such as TRUE/FALSE, numeric differences, or custom messages. Additionally in mode 0 the detector can take three arguments (current, previous, next) to allow for more complex edge detection logic. You can also define additional input parameters to the detector lambda for more advanced use cases.
+
+Returns TRUE where value changes relative to previous row (with circular wrap behavior at boundaries).
+
+---
+
+## COMMENT
+
+**Purpose**: Pass-through helper for self-documenting formulas.
+
+**Syntax**:
+```excel
+=COMMENT(FEATURE, NOTE)
+```
+
+Current definition:
+```excel
+=LAMBDA(FEATURE,NOTE,FEATURE)
+```
+
+**How it works**:
+- Ignores `NOTE` at calculation time.
+- Returns `FEATURE` unchanged.
+- Useful for embedding readable intent into long LET chains.
+
+**Example**:
+```excel
+=LET(
+  cleaned, COMMENT(TRIM(A2), "Normalize user text"),
+  UPPER(cleaned)
+)
+```
+
+---
+
 ## Function Integration
 
 These utility functions provide the foundation for safe, robust operations throughout the function library:
 
 - **Safety Functions** (`safeDrop`, `safeFilter`, `makearr`) ensure reliable array operations
 - **Validation Functions** (`between`, `isInSet`) enable sophisticated conditional logic
-- **Text Processing** (`inches`, `countOccurrencesText`) handle specialized parsing needs
+- **Text Processing** (`inches`, `countOccurancesText`) handle specialized parsing needs
+- **Flow Helpers** (`EdgeDetect`, `COMMENT`) support advanced row-diff logic and inline documentation patterns
 
 Together, they create a defensive programming approach that prevents errors and handles edge cases gracefully, making the entire function library more reliable and user-friendly.
