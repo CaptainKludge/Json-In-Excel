@@ -27,7 +27,6 @@ The current `functions.json` export contains 27 functions.
 
 The docs match the names that are actually exported. A few implementation details are still worth knowing when you import into a clean workbook.
 
-- `dropBySet` calls `inInSet` in the stored formula, which looks like a typo or workbook-specific alias.
 - Name Manager comments can be exported in the reserved metadata object `__nameManagerComments`.
 
 If you are importing this file set into a brand-new workbook, verify those names before relying on the dependent functions.
