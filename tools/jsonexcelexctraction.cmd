@@ -19,10 +19,12 @@ Add-Type -AssemblyName System.Drawing
 
 $Script:excelPath = $null
 $Script:jsonPath = $null
-if($sourceDir){
+if($sourceDir) {
     $Script:excelPath = $sourceDir
       $Script:jsonPath = $sourceDir + " - functions.json"
 }
+
+$Script:commentMetadataKey = "__nameManagerComments"
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Excel Function Sync"
 $form.Size = New-Object System.Drawing.Size(600,300)
@@ -116,6 +118,26 @@ function Update-Status {
     [System.Windows.Forms.Application]::DoEvents()
 }
 
+function Get-NameManagerComment {
+    param($NameObject)
+
+    try {
+        $comment = $NameObject.Comment
+        if($null -eq $comment) { return "" }
+        return [string]$comment
+    } catch {
+        return ""
+    }
+}
+
+function Get-JsonPropertyValue {
+    param($Object, [string]$PropertyName)
+
+    $prop = $Object.PSObject.Properties[$PropertyName]
+    if($null -eq $prop) { return $null }
+    return $prop.Value
+}
+
 $btnRun.Add_Click({
     Write-Host "Run button clicked."
     if (-not $Script:excelPath) {
@@ -164,9 +186,11 @@ $btnRun.Add_Click({
         # Extract Mode
         Write-Host "Extracting named formulas..."
         Update-Status 20 "Extracting formulas..."
-        $dict = @{}
+        $dict = [ordered]@{}
+        $commentDict = [ordered]@{}
         $names = $wb.Names
         $count = $names.Count
+        $storedComments = 0
         Write-Host "Found $count named items."
 		Write-Host "Workbook-Level Names Count: $($wb.Names.Count)"
 foreach ($n in $wb.Names) {
@@ -181,14 +205,23 @@ foreach ($n in $wb.Names) {
             try {
                 $nm = $names.Item($i)
                 $ref = $nm.RefersTo
-                if ($ref -match "^= ?LAMBDA") {
+                if ($ref -match '^=\s*LAMBDA\b') {
                     Write-Host "Found LAMBDA: $($nm.Name)"
                     $dict[$nm.Name] = $ref
+                    $comment = Get-NameManagerComment $nm
+                    if(-not [string]::IsNullOrWhiteSpace($comment)) {
+                        $commentDict[$nm.Name] = $comment
+                        $storedComments++
+                    }
                 }
             } catch {
                 Write-Host ("Error reading name item " + $i + ":" + $_)
             }
             Update-Status ([int](($i / $count) * 90)) "Scanning $i of $count..."
+        }
+
+        if($storedComments -gt 0) {
+            $dict[$Script:commentMetadataKey] = $commentDict
         }
 
         try {
@@ -214,18 +247,29 @@ foreach ($n in $wb.Names) {
                 return
             }
 
-            $keys = $json.PSObject.Properties.Name
+            $commentMap = Get-JsonPropertyValue $json $Script:commentMetadataKey
+            $keys = @($json.PSObject.Properties.Name | Where-Object { $_ -ne $Script:commentMetadataKey })
             $count = $keys.Count
             Write-Host "Found $count entries in JSON."
 
             $i = 0
             foreach ($k in $keys) {
                 $i++
-                $formula = $json.$k
+                $formula = Get-JsonPropertyValue $json $k
+                if($formula -isnot [string]) {
+                    Write-Host "Skipping non-formula entry: $k"
+                    continue
+                }
                 Write-Host "Inserting $k = $formula"
                 try { $wb.Names.Item($k).Delete() } catch {}
                 try {
-                    $wb.Names.Add($k, $formula) | Out-Null
+                    $newName = $wb.Names.Add($k, $formula)
+                    if($null -ne $commentMap) {
+                        $comment = Get-JsonPropertyValue $commentMap $k
+                        if($null -ne $comment) {
+                            try { $newName.Comment = [string]$comment } catch {}
+                        }
+                    }
                 } catch {
                     Write-Host ("Error inserting " + $k + ":" + $_)
                 }

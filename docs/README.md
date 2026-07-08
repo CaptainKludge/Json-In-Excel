@@ -1,57 +1,34 @@
-## Json-In-Excel function docs
+# Json-In-Excel Docs
 
-This folder contains generated documentation for the Excel LAMBDA helper functions stored in the project's functions JSON file. Each file groups related functions by purpose and shows the function's formula (as an Excel formula) with notes.
+This folder is the readable guide to the functions exported in [../functions.json](../functions.json). The formulas themselves are the source of truth. Each function section includes a linted formula block, implementation notes that explain the actual mechanics, real-world examples, and notation notes.
 
-Files:
+## Read By Purpose
 
 | File | Purpose |
 |---|---|
-| `json.md` | Functions for JSON creation, quoting, getting and setting values |
-| `list-and-array.md` | Helpers for lists, arrays and conversions |
-| `safety-and-utils.md` | Utility and safe-wrapping functions (safeDrop, safeFilter, makearr, etc.) |
-| `algorithms.md` | Allocation/optimization solvers (`partFill`, `greedyPartFill`) |
+| [json.md](json.md) | Build, inspect, update, merge, and remove JSON object content |
+| [list-and-array.md](list-and-array.md) | Convert arrays, count values, project columns, and generate pairings |
+| [safety-and-utils.md](safety-and-utils.md) | Parse ranges, handle measurements, reshape data safely, and annotate formulas |
+| [algorithms.md](algorithms.md) | Use `partFill` to allocate parts against a target span |
+| [importer-exporter.md](importer-exporter.md) | Import/export workflows for workbook names and JSON files |
 
-## Coverage (functions.json)
+## Coverage
 
-Current docs cover all functions presently listed in `functions.json`:
+The current `functions.json` export contains 27 functions.
 
-- JSON: `jsonObject`, `jsonQuote`, `jsonGetKeysAtLevel`, `jsonGet`, `jsonSet`, `jsonJoin`, `jsonRemove`, `nestedJsonBuild`
-- List/array: `listToJson`, `listFromJson`, `arrayRepAdd`, `CountUnique`, `GiveMostFrequent`, `vLastItem`, `SelectFilter`, `dropBySet`, `permutate`
-- Utilities/safety: `safeDrop`, `safeFilter`, `makearr`, `between`, `isInSet`, `inches`, `countOccurancesText`, `EdgeDetect`, `COMMENT`
-- Algorithms: `partFill`, `greedyPartFill`
+| Group | Functions |
+|---|---|
+| JSON object operations | `jsonQuote`, `jsonObject`, `jsonGetKeysAtLevel`, `jsonGet`, `nestedJsonBuild`, `jsonSet`, `jsonRemove`, `jsonJoin` |
+| List and array operations | `listToJson`, `listFromJson`, `arrayRepAdd`, `CountUnique`, `GiveMostFrequent`, `vLastItem`, `SelectFilter`, `permutate` |
+| Utilities and analysis | `countOccurancesText`, `isInSet`, `COMMENT`, `dropBySet`, `EdgeDetect`, `between`, `safeFilter`, `makearr`, `safeDrop`, `inches` |
+| Algorithm | `partFill` |
 
-Naming notes from current function set:
+## Important Implementation Notes
 
+The docs match the names that are actually exported. A few implementation details are still worth knowing when you import into a clean workbook.
 
-Notes:
+- `dropBySet` calls `inInSet` in the stored formula, which looks like a typo or workbook-specific alias.
+- Name Manager comments can be exported in the reserved metadata object `__nameManagerComments`.
 
-- The code blocks contain Excel formulas intended to be copy-pasted into the Excel Name Manager or used as LAMBDA definitions. They do not include comments inside the formulas themselves (Excel formulas don't support comments). Additional explanatory notes are provided outside the code blocks.
-
----
-
-Generated on: 2026-06-26
-
-## Using the command-line helper (`jsonexcelexctraction.cmd`)
-
-There is a small bundled helper script in the repo root named `jsonexcelexctraction.cmd`. It launches a simple PowerShell GUI to extract Excel LAMBDA Name Manager entries to a JSON file or insert functions from a JSON file back into an Excel workbook.
-
-Usage summary:
-
-- Double-click `jsonexcelexctraction.cmd` to open the GUI. You can also run it from PowerShell or CMD. When launched it will allow selecting an Excel file and a target JSON file.
-- Modes:
-	- Extract Mode (default): scans the selected workbook's defined names and exports any `=LAMBDA(...)` formulas to a JSON file named `<workbook name> - functions.json` by default.
-	- Insert Mode (check the "Insert Mode" box): reads a JSON functions file and inserts each entry as a defined name in the selected workbook (overwriting existing names with the same name).
-
-Command-line invocation (optional):
-
-You may pass an Excel file path as the first argument to pre-select it when the GUI opens. Example from PowerShell (pwsh.exe):
-
-```powershell
-& .\jsonexcelexctraction.cmd "C:\path\to\workbook.xlsx"
-```
-
-Notes & safety:
-
-- The script uses COM automation to open and edit the workbook. It saves the workbook automatically when inserting names. Make a backup before running Insert Mode on important workbooks.
-- The GUI also allows picking a different JSON file path if you don't want the default `<workbook name> - functions.json` file.
+If you are importing this file set into a brand-new workbook, verify those names before relying on the dependent functions.
 

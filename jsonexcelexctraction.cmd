@@ -23,7 +23,7 @@ formulas with parameters. This tool specifically targets these advanced function
 OPERATION MODES:
 1. EXTRACT MODE (Default): Scans Excel workbook for LAMBDA functions and exports to JSON
    - Reads all Named Ranges in the workbook
-   - Filters for formulas beginning with "=LAMBDA"
+    - Filters for formulas beginning with `=` followed by optional whitespace and `LAMBDA`
    - Creates structured JSON file with function name/formula pairs
    
 2. INSERT MODE (Checkbox): Imports function definitions from JSON into Excel workbook
@@ -82,6 +82,7 @@ Add-Type -AssemblyName System.Drawing
 # Script-level variables for file paths (persistent across GUI events)
 $Script:excelPath = $null    # Path to source/target Excel workbook
 $Script:jsonPath = $null     # Path to JSON function definition file
+$Script:commentMetadataKey = "__nameManagerComments"
 
 # Initialize paths if launched from context menu (right-click on Excel file)
 if($sourceDir) {
@@ -306,6 +307,35 @@ function Update-Status {
     Write-Host "Progress: $progress% - $text" -ForegroundColor Gray
 }
 
+function Get-NameManagerComment {
+    param(
+        [Parameter(Mandatory=$true)]
+        $NameObject
+    )
+
+    try {
+        $comment = $NameObject.Comment
+        if($null -eq $comment) { return "" }
+        return [string]$comment
+    } catch {
+        return ""
+    }
+}
+
+function Get-JsonPropertyValue {
+    param(
+        [Parameter(Mandatory=$true)]
+        $Object,
+
+        [Parameter(Mandatory=$true)]
+        [string]$PropertyName
+    )
+
+    $prop = $Object.PSObject.Properties[$PropertyName]
+    if($null -eq $prop) { return $null }
+    return $prop.Value
+}
+
 #===============================================================================================
 #|                         MAIN OPERATION EXECUTION HANDLER                                  |
 #===============================================================================================
@@ -401,10 +431,12 @@ $btnRun.Add_Click({
     if(-not $modeInsert) {
         Write-Host "--- EXTRACT MODE: Scanning Excel workbook for LAMBDA functions ---" -ForegroundColor Yellow
         
-        $dict = @{}                      # Dictionary to store function name → formula pairs
+        $dict = [ordered]@{}             # Dictionary to store function name → formula pairs
+        $commentDict = [ordered]@{}      # Optional Name Manager comments keyed by function name
         $names = $wb.Names               # Get all Named Ranges in the workbook
         $count = $names.Count
         $foundFunctions = 0
+        $storedComments = 0
         
         Write-Host "Scanning $count Named Ranges for LAMBDA functions..." -ForegroundColor Cyan
         Update-Status 15 "Scanning Named Ranges for LAMBDA functions..."
@@ -415,9 +447,14 @@ $btnRun.Add_Click({
                 $nm = $names.Item($i)        # Get Named Range object
                 $ref = $nm.RefersTo          # Get the formula reference
                 
-                # Check if this is a LAMBDA function (starts with "=LAMBDA")
-                if($ref -match "^=LAMBDA") {
+                # Check if this is a LAMBDA function, allowing spaces after the equals sign.
+                if($ref -match '^=\s*LAMBDA\b') {
                     $dict[$nm.Name] = $ref   # Store function name and formula
+                    $comment = Get-NameManagerComment -NameObject $nm
+                    if(-not [string]::IsNullOrWhiteSpace($comment)) {
+                        $commentDict[$nm.Name] = $comment
+                        $storedComments++
+                    }
                     $foundFunctions++
                     Write-Host "  Found LAMBDA function: $($nm.Name)" -ForegroundColor Green
                 }
@@ -432,6 +469,10 @@ $btnRun.Add_Click({
         }
         
         Write-Host "Scan complete - Found $foundFunctions LAMBDA functions" -ForegroundColor Green
+        if($storedComments -gt 0) {
+            $dict[$Script:commentMetadataKey] = $commentDict
+            Write-Host "Found $storedComments Name Manager comments" -ForegroundColor Green
+        }
         Update-Status 90 "Writing functions to JSON file..."
         
         # Export dictionary to JSON file with proper formatting
@@ -442,7 +483,7 @@ $btnRun.Add_Click({
             
             # Show completion message
             [System.Windows.Forms.MessageBox]::Show(
-                "Export completed successfully!`n`nFound: $foundFunctions LAMBDA functions`nSaved to: $Script:jsonPath", 
+                "Export completed successfully!`n`nFound: $foundFunctions LAMBDA functions`nStored comments: $storedComments`nSaved to: $Script:jsonPath", 
                 "Export Complete", 
                 [System.Windows.Forms.MessageBoxButtons]::OK, 
                 [System.Windows.Forms.MessageBoxIcon]::Information
@@ -473,9 +514,11 @@ $btnRun.Add_Click({
                 # Load and parse JSON file
                 $jsonContent = Get-Content $Script:jsonPath -Raw
                 $json = $jsonContent | ConvertFrom-Json
-                $keys = $json.PSObject.Properties.Name
+                $commentMap = Get-JsonPropertyValue -Object $json -PropertyName $Script:commentMetadataKey
+                $keys = @($json.PSObject.Properties.Name | Where-Object { $_ -ne $Script:commentMetadataKey })
                 $count = $keys.Count
                 $insertedFunctions = 0
+                $restoredComments = 0
                 $i = 0
                 
                 Write-Host "Loading $count functions from JSON file..." -ForegroundColor Cyan
@@ -484,7 +527,11 @@ $btnRun.Add_Click({
                 # Iterate through each function definition in JSON
                 foreach($functionName in $keys) {
                     $i++
-                    $formula = $json.$functionName
+                    $formula = Get-JsonPropertyValue -Object $json -PropertyName $functionName
+                    if($formula -isnot [string]) {
+                        Write-Host "  Skipped non-formula JSON entry: $functionName" -ForegroundColor Yellow
+                        continue
+                    }
                     
                     try {
                         # Delete existing function with same name (prevents duplicates)
@@ -496,7 +543,18 @@ $btnRun.Add_Click({
                         }
                         
                         # Add new Named Range with LAMBDA formula
-                        $wb.Names.Add($functionName, $formula) | Out-Null
+                        $newName = $wb.Names.Add($functionName, $formula)
+                        if($null -ne $commentMap) {
+                            $comment = Get-JsonPropertyValue -Object $commentMap -PropertyName $functionName
+                            if($null -ne $comment) {
+                                try {
+                                    $newName.Comment = [string]$comment
+                                    $restoredComments++
+                                } catch {
+                                    Write-Host "  WARNING: Failed to restore comment for '$functionName': $($_.Exception.Message)" -ForegroundColor Yellow
+                                }
+                            }
+                        }
                         $insertedFunctions++
                         Write-Host "  Inserted function: $functionName" -ForegroundColor Green
                         
@@ -538,23 +596,35 @@ $btnRun.Add_Click({
                     # Add headers
                     $newFunctionsSheet.Cells.Item(1, 1).Value2 = "Function Name"
                     $newFunctionsSheet.Cells.Item(1, 2).Value2 = "Formula"
+                    $newFunctionsSheet.Cells.Item(1, 3).Value2 = "Comment"
                     
                     # Make headers bold
                     $newFunctionsSheet.Cells.Item(1, 1).Font.Bold = $true
                     $newFunctionsSheet.Cells.Item(1, 2).Font.Bold = $true
+                    $newFunctionsSheet.Cells.Item(1, 3).Font.Bold = $true
                     
                     # Populate the sheet with function names and formulas
                     $row = 2
                     foreach($functionName in $keys) {
-                        $formula = $json.$functionName
+                        $formula = Get-JsonPropertyValue -Object $json -PropertyName $functionName
+                        if($formula -isnot [string]) {
+                            continue
+                        }
                         $newFunctionsSheet.Cells.Item($row, 1).Value2 = $functionName
                         $newFunctionsSheet.Cells.Item($row, 2).Value2 = $formula
+                        if($null -ne $commentMap) {
+                            $comment = Get-JsonPropertyValue -Object $commentMap -PropertyName $functionName
+                            if($null -ne $comment) {
+                                $newFunctionsSheet.Cells.Item($row, 3).Value2 = [string]$comment
+                            }
+                        }
                         $row++
                     }
                     
                     # Auto-fit columns for better readability
                     $newFunctionsSheet.Columns.Item(1).AutoFit() | Out-Null
                     $newFunctionsSheet.Columns.Item(2).ColumnWidth = 100  # Set a reasonable width for formulas
+                    $newFunctionsSheet.Columns.Item(3).ColumnWidth = 40
                     
                     Write-Host "  Successfully populated 'New Functions' sheet with $count functions" -ForegroundColor Green
                     
@@ -573,7 +643,7 @@ $btnRun.Add_Click({
                 
                 # Show completion message
                 [System.Windows.Forms.MessageBox]::Show(
-                    "Insert completed successfully!`n`nInserted: $insertedFunctions LAMBDA functions`nCreated 'New Functions' sheet with function list`nSaved to: $Script:excelPath", 
+                    "Insert completed successfully!`n`nInserted: $insertedFunctions LAMBDA functions`nRestored comments: $restoredComments`nCreated 'New Functions' sheet with function list`nSaved to: $Script:excelPath", 
                     "Insert Complete", 
                     [System.Windows.Forms.MessageBoxButtons]::OK, 
                     [System.Windows.Forms.MessageBoxIcon]::Information

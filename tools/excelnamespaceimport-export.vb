@@ -220,7 +220,7 @@ Private Sub ExtractFunctionsToJson()
     
     ' Scan all named ranges for LAMBDA functions
     For Each nm In wb.Names
-        If Left(nm.RefersTo, 7) = "=LAMBDA" Then
+        If IsLambdaFormula(nm.RefersTo) Then
             functionDict(nm.Name) = nm.RefersTo
         End If
     Next nm
@@ -244,6 +244,17 @@ ErrorHandler:
     If Not wb Is Nothing Then wb.Close SaveChanges:=False
     MsgBox "Error during extraction: " & Err.Description, vbCritical
 End Sub
+
+Private Function IsLambdaFormula(ByVal formulaText As String) As Boolean
+    Dim normalized As String
+
+    normalized = LTrim$(formulaText)
+    If Left$(normalized, 1) <> "=" Then Exit Function
+
+    normalized = Mid$(normalized, 2)
+    normalized = LTrim$(normalized)
+    IsLambdaFormula = (UCase$(Left$(normalized, 6)) = "LAMBDA")
+End Function
 
 ' Insert LAMBDA functions from JSON to Excel
 Private Sub InsertFunctionsFromJson()
