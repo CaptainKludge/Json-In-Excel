@@ -54,8 +54,6 @@ The function definitions themselves live in [functions.json](functions.json). Th
 ## Current Implementation Notes
 
 The current exported set is useful, and the formulas in [functions.json](functions.json) also expose a few implementation details that matter when you import into a clean workbook.
-
-- `dropBySet` calls `inInSet` in the saved formula, which appears to be a typo or an alias for `isInSet`.
 - Name Manager comments are stored under the reserved metadata key `__nameManagerComments`.
 
 Those notes matter if you are importing this exact `functions.json` into a clean workbook.
